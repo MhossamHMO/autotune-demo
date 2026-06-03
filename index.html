@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>AutoTune AI — Live Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#060a14;--bg2:#0c1222;--bg3:#111928;
+  --card:rgba(255,255,255,.04);--cardh:rgba(255,255,255,.07);
+  --bdr:rgba(255,255,255,.08);--bdrh:rgba(250,185,80,.5);
+  --t1:#f0f4ff;--t2:#8899bb;--t3:#445577;
+  --amb:#fab950;--ambd:rgba(250,185,80,.12);--ambg:rgba(250,185,80,.28);
+  --tel:#38d9c0;--teld:rgba(56,217,192,.1);
+  --grn:#34d399;--red:#f87171;--blu:#60a5fa;
+  --sbg:linear-gradient(135deg,rgba(250,185,80,.18),rgba(56,217,192,.08));
+  --sbdr:#fab950;--sglw:rgba(250,185,80,.3);
+  --btn:linear-gradient(135deg,#fab950,#f59e0b);--btnt:#060a14;
+  --log:#020408;
+  --mesh:radial-gradient(ellipse 70% 50% at 15% -5%,rgba(250,185,80,.07) 0%,transparent 55%),
+        radial-gradient(ellipse 55% 40% at 90% 105%,rgba(56,217,192,.05) 0%,transparent 55%);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t1);overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background:var(--mesh);pointer-events:none;z-index:0}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--ambd);border-radius:4px}
+
+/* TOPBAR */
+#bar{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;
+     justify-content:space-between;padding:0 16px;z-index:900;
+     background:rgba(6,10,20,.92);backdrop-filter:blur(20px);
+     border-bottom:1px solid var(--bdr)}
+#bar-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;
+          background:linear-gradient(90deg,var(--amb),var(--tel));
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#demo-badge{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
+            padding:3px 8px;border-radius:20px;letter-spacing:.1em;
+            background:rgba(250,185,80,.12);border:1px solid rgba(250,185,80,.3);color:var(--amb)}
+
+/* NAV BOTTOM */
+#nav{position:fixed;bottom:0;left:0;right:0;height:58px;display:flex;align-items:center;
+     justify-content:space-between;padding:0 12px;z-index:900;
+     background:rgba(6,10,20,.95);backdrop-filter:blur(20px);
+     border-top:1px solid var(--bdr);gap:8px}
+.nav-btn{flex:1;height:38px;border-radius:10px;border:1px solid var(--bdr);
+         background:transparent;color:var(--t2);font-family:'Syne',sans-serif;
+         font-weight:700;font-size:12px;cursor:pointer;transition:all .2s;
+         display:flex;align-items:center;justify-content:center;gap:5px}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed}
+.nav-btn.primary{background:var(--btn);color:var(--btnt);border:none;
+                  box-shadow:0 4px 16px var(--ambg)}
+.nav-btn:not(:disabled):not(.primary):hover{background:var(--card);border-color:var(--bdrh);color:var(--t1)}
+
+/* PAGES */
+#pages{position:fixed;top:52px;left:0;right:0;bottom:58px;overflow:hidden}
+.sp{position:absolute;inset:0;overflow-y:auto;transform:translateX(100%);
+    transition:transform .32s cubic-bezier(.4,0,.2,1);will-change:transform}
+.sp.active{transform:translateX(0)}
+.sp.past{transform:translateX(-100%)}
+.si{padding:20px 18px 24px;max-width:480px;margin:0 auto;min-height:100%}
+
+/* TYPOGRAPHY */
+.ey{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--amb);margin-bottom:8px}
+.sh{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(22px,5vw,32px);
+    line-height:1.18;letter-spacing:-.03em;margin-bottom:10px}
+.sh em{color:var(--amb);font-style:normal}
+.ss{font-size:13px;color:var(--t2);line-height:162%;font-weight:300;margin-bottom:18px}
+
+/* PICK CARDS */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.g5{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.pc,.mc{position:relative;padding:14px 12px 12px;background:var(--card);
+        border:1.5px solid var(--bdr);border-radius:14px;cursor:pointer;
+        transition:border-color .2s,background .2s,transform .15s;
+        -webkit-tap-highlight-color:transparent}
+.pc:active,.mc:active{transform:scale(.97)}
+.pc.selected,.mc.selected{background:var(--sbg);border-color:var(--sbdr);
+  box-shadow:0 0 0 1px var(--sbdr),0 8px 24px var(--sglw)}
+.pc.locked,.mc.locked{opacity:.35;cursor:not-allowed;pointer-events:none}
+.pc.locked::after{content:'🔒';position:absolute;top:8px;right:8px;font-size:10px}
+.chk{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--bdr);
+     margin-bottom:8px;transition:all .2s}
+.selected .chk{background:var(--amb);border-color:var(--amb);
+  box-shadow:0 0 0 3px rgba(250,185,80,.2)}
+.em{font-size:22px;display:block;margin-bottom:6px}
+.pt{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--t1);margin-bottom:3px}
+.pd{font-size:11px;color:var(--t3);font-weight:300;line-height:138%}
+.mn{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--t1);margin-bottom:3px}
+.ms{font-size:10px;font-weight:700;color:var(--amb);font-family:'JetBrains Mono',monospace;
+    letter-spacing:.04em;margin-bottom:4px}
+.md{font-size:11px;color:var(--t2);font-weight:300;line-height:138%;margin-bottom:6px}
+.mv,.mg{font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:1px}
+.mc.feat{border-color:rgba(56,217,192,.3)}
+.mc.fast .pbadge{position:absolute;top:-1px;right:-1px;font-size:9px;font-weight:700;
+  padding:2px 7px;background:var(--btn);color:var(--btnt);border-radius:0 14px 0 8px;
+  font-family:'Syne',sans-serif;letter-spacing:.02em}
+.glbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+      color:var(--t3);font-family:'JetBrains Mono',monospace;margin:14px 0 10px}
+.glbl.tl{margin-top:16px;color:var(--amb)}
+
+/* DATA SOURCE CARDS */
+.src-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.src{padding:14px 16px;background:var(--card);border:1.5px solid var(--bdr);
+     border-radius:14px;cursor:pointer;transition:all .2s;position:relative;
+     -webkit-tap-highlight-color:transparent}
+.src:active{transform:scale(.98)}
+.src.sel{background:var(--sbg);border-color:var(--sbdr)}
+.si2{font-size:20px;margin-bottom:6px;display:block}
+.st{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--t1);margin-bottom:3px}
+.sd{font-size:12px;color:var(--t2);font-weight:300;line-height:148%}
+.stag{position:absolute;top:12px;right:12px;font-size:9px;font-weight:700;
+      padding:2px 7px;background:rgba(250,185,80,.1);border:1px solid rgba(250,185,80,.2);
+      color:var(--amb);border-radius:8px;font-family:'JetBrains Mono',monospace}
+
+/* REVIEW SUMMARY */
+.rev-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.rev-card{padding:12px 14px;background:var(--card);border:1px solid var(--bdr);border-radius:12px}
+.rev-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+           color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:5px}
+.rev-val{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--t1)}
+.rev-sub{font-size:11px;color:var(--t2);font-weight:300;margin-top:2px}
+.info-box{padding:14px 16px;background:var(--ambd);border:1px solid rgba(250,185,80,.2);
+          border-radius:12px;font-size:12px;color:var(--t2);font-weight:300;line-height:158%;
+          display:flex;align-items:flex-start;gap:12px}
+.info-box span{font-size:20px;flex-shrink:0}
+
+/* SYNTHESIS */
+.upz-dummy{padding:20px;border:2px dashed var(--bdr);border-radius:12px;
+           text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px}
+.upz-dummy:hover,.upz-dummy.drag{border-color:var(--amb);background:var(--ambd)}
+.pdf-ready{padding:12px 14px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.2);
+           border-radius:10px;display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.c-chunk{margin-bottom:10px;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;overflow:hidden}
+.c-hdr{padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;
+       letter-spacing:.08em;color:var(--t2);cursor:pointer;
+       display:flex;justify-content:space-between;align-items:center;
+       text-transform:uppercase;background:var(--bg3)}
+.c-pair{padding:10px 12px;border-top:1px solid var(--bdr)}
+.c-pair.ok{background:rgba(52,211,153,.04)}
+.c-pair.rej{background:rgba(248,113,113,.04)}
+.c-ptype{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;
+         letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;
+         display:flex;align-items:center;gap:5px}
+.c-q{font-size:12px;color:var(--t1);font-weight:500;margin-bottom:3px;line-height:140%}
+.c-a{font-size:11px;color:var(--t2);font-weight:300;line-height:148%}
+.c-rej{font-size:10px;color:var(--red);font-family:'JetBrains Mono',monospace;margin-top:3px}
+.gen-btn{width:100%;padding:14px;background:var(--btn);color:var(--btnt);border:none;
+         border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;
+         cursor:pointer;margin-bottom:14px;transition:all .2s}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* TRAINING WINDOW */
+.train-header{padding:16px 18px 14px;background:var(--bg2);border:1px solid var(--bdr);
+              border-radius:14px;margin-bottom:14px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.dot.idle{background:var(--t3)}
+.dot.running{background:var(--grn);animation:pulse 1.4s ease-in-out infinite}
+.dot.done{background:var(--grn)}
+.dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(52,211,153,.4)}50%{box-shadow:0 0 0 6px rgba(52,211,153,0)}}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.t-ph-label{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--t1)}
+.t-tx-label{font-size:11px;color:var(--t2);font-weight:300}
+.slim-bar{height:4px;background:var(--bg3);border-radius:4px;overflow:hidden;margin:10px 0 6px}
+.slim-fill{height:100%;background:linear-gradient(90deg,var(--amb),var(--tel));
+           border-radius:4px;transition:width .6s ease;width:0}
+.stages{display:flex;gap:6px;margin-top:8px}
+.stg{flex:1;padding:5px 4px;border:1px solid var(--bdr);border-radius:7px;
+     font-size:9px;font-family:'JetBrains Mono',monospace;text-align:center;
+     color:var(--t3);transition:all .3s}
+.stg.act{border-color:var(--amb);color:var(--amb);background:var(--ambd)}
+.stg.dn{border-color:rgba(52,211,153,.3);color:var(--grn);background:rgba(52,211,153,.06)}
+.prog-step{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;
+           background:var(--card);border:1px solid var(--bdr);border-radius:12px;margin-bottom:8px}
+.ps-icon{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+         font-size:12px;flex-shrink:0;margin-top:1px}
+.ps-icon.spinning{background:var(--ambd);border:1px solid rgba(250,185,80,.3);color:var(--amb)}
+.ps-icon.done{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--grn)}
+.ps-icon.error{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.3);color:var(--red)}
+.ps-title{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:6px}
+.ps-title.done-text{color:var(--grn)}
+.ps-title.error-text{color:var(--red)}
+.ps-sub{font-size:11px;color:var(--t2);font-weight:300;margin-top:3px;line-height:145%}
+.ps-sub.highlight{color:var(--amb);font-family:'JetBrains Mono',monospace;font-size:10px}
+/* Chunk section text */
+.c-txt{padding:10px 12px;font-size:11px;color:var(--t2);line-height:160%;
+       font-style:italic;border-bottom:1px solid var(--bdr);
+       display:none;max-height:180px;overflow-y:auto}
+.c-txt.open{display:block}
+.c-toggle{font-size:10px;font-weight:500;color:var(--amb);
+          white-space:nowrap;flex-shrink:0;margin-left:6px;font-family:'DM Sans',sans-serif}
+.c-rej-reason{margin-top:5px;padding:6px 8px;background:rgba(248,113,113,.08);
+              border:1px solid rgba(248,113,113,.2);border-radius:6px;
+              font-size:10px;color:var(--red);font-family:'JetBrains Mono',monospace;
+              letter-spacing:.02em;line-height:145%}
+.c-rej-why{font-size:10px;color:var(--t3);font-weight:300;margin-top:3px;line-height:140%;font-style:italic}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ps-spinner{display:inline-block;width:10px;height:10px;border:1.5px solid var(--amb);
+            border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+
+/* PROOF STEP */
+.proof-q{padding:12px 14px;background:var(--card);border:1px solid var(--bdr);
+         border-radius:12px;margin-bottom:10px}
+.proof-q-label{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+               color:var(--amb);font-family:'JetBrains Mono',monospace;margin-bottom:6px}
+.proof-q-text{font-size:13px;color:var(--t1);font-weight:500}
+.ask-btn{padding:10px 14px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;
+         color:var(--t3);font-family:'Syne',sans-serif;font-weight:700;font-size:11px;
+         cursor:not-allowed;width:100%;margin-top:10px;opacity:.4}
+.notice{padding:12px 14px;border-radius:10px;font-size:12px;line-height:155%;font-weight:300}
+.ni{background:rgba(56,217,192,.07);border:1px solid rgba(56,217,192,.2);color:var(--tel)}
+.na{background:var(--ambd);border:1px solid rgba(250,185,80,.2);color:var(--amb)}
+
+/* TOAST */
+#toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);
+       z-index:2000;padding:9px 18px;border-radius:10px;font-family:'Syne',sans-serif;
+       font-weight:700;font-size:12px;pointer-events:none;opacity:0;
+       transition:opacity .25s,transform .25s;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.warn{background:rgba(250,185,80,.15);border:1px solid var(--amb);color:var(--amb)}
+#toast.info{background:rgba(56,217,192,.12);border:1px solid var(--tel);color:var(--tel)}
+
+/* STAT ROW */
+.srow{display:flex;justify-content:space-between;padding:4px 0;font-size:11px;
+      border-bottom:1px solid var(--bdr);color:var(--t2)}
+.srow:last-child{border-bottom:none}
+.slbl{color:var(--t3);font-weight:300}
+
+/* STEP INDICATOR */
+.step-dots{display:flex;gap:5px;justify-content:center;padding:8px 0 0}
+.dot2{width:6px;height:6px;border-radius:50%;background:var(--bdr);transition:all .3s}
+.dot2.active{background:var(--amb);width:16px;border-radius:3px}
+.dot2.done{background:rgba(52,211,153,.4)}
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <div id="bar-logo">AutoTune AI</div>
+  <div id="demo-badge">LIVE DEMO</div>
+</div>
+
+<div id="pages">
+
+<!-- S0: WELCOME -->
+<div class="sp active" id="s0">
+<div class="si" style="display:flex;flex-direction:column;justify-content:center;min-height:100%;padding-top:16px;padding-bottom:16px">
+  <div class="ey">Mission Briefing</div>
+  <div class="sh">Your domain.<br>Your rules.<br><em>Your AI.</em></div>
+  <p class="ss">AutoTune AI trains a language model on your field and interaction style. No code. No ML background. Upload your own knowledge or let us handle it.</p>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+    <div style="padding:10px;background:var(--card);border:1px solid var(--bdr);border-radius:10px">
+      <div style="font-size:18px;margin-bottom:4px">🎯</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:11px;color:var(--t1);margin-bottom:2px">6 Domains</div>
+      <div style="font-size:10px;color:var(--t3);font-weight:300">Medicine, law, finance, coding, psychology, science</div>
+    </div>
+    <div style="padding:10px;background:var(--card);border:1px solid var(--bdr);border-radius:10px">
+      <div style="font-size:18px;margin-bottom:4px">🎭</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:11px;color:var(--t1);margin-bottom:2px">5 Personas</div>
+      <div style="font-size:10px;color:var(--t3);font-weight:300">From warm chatbots to step-by-step reasoners</div>
+    </div>
+    <div style="padding:10px;background:var(--card);border:1px solid var(--bdr);border-radius:10px">
+      <div style="font-size:18px;margin-bottom:4px">⚡</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:11px;color:var(--t1);margin-bottom:2px">Instant or Fresh</div>
+      <div style="font-size:10px;color:var(--t3);font-weight:300">Pre-built adapters load in seconds</div>
+    </div>
+  </div>
+  <div class="notice na" style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:18px;flex-shrink:0">🎓</span>
+    <div>You are about to experience the full AutoTune AI pipeline — pick your settings and watch your AI get trained in real time.</div>
+  </div>
+</div>
+</div>
+
+<!-- S1: DOMAIN -->
+<div class="sp" id="s1">
+<div class="si">
+  <div class="ey">Step 1 — Domain</div>
+  <div class="sh">What field is your<br>AI expert in?</div>
+  <p class="ss">Pick the area your AI will specialise in. This shapes the knowledge it learns, the depth of understanding it develops, and how it will be evaluated.</p>
+  <div class="g3">
+    <div class="pc" data-val="medical" onclick="pick(this,'domain')"><div class="chk"></div><span class="em">🩺</span><div class="pt">Medicine</div><div class="pd">Clinical reasoning, diagnostics, treatment planning</div></div>
+    <div class="pc locked" data-val="legal"><div class="chk"></div><span class="em">⚖️</span><div class="pt">Law</div><div class="pd">Contract law, tort, criminal law</div></div>
+    <div class="pc locked" data-val="finance"><div class="chk"></div><span class="em">📊</span><div class="pt">Finance</div><div class="pd">Valuation, risk, investment analysis</div></div>
+    <div class="pc locked" data-val="coding"><div class="chk"></div><span class="em">💻</span><div class="pt">Coding</div><div class="pd">Python, algorithms, data structures</div></div>
+    <div class="pc locked" data-val="psychology"><div class="chk"></div><span class="em">🧠</span><div class="pt">Psychology</div><div class="pd">Therapy, clinical diagnosis, behaviour</div></div>
+    <div class="pc locked" data-val="science"><div class="chk"></div><span class="em">🔬</span><div class="pt">Science</div><div class="pd">Physics, biology, chemistry, STEM</div></div>
+  </div>
+  <div class="notice na" style="font-size:11px">🔒 Only Medicine is available in this demo. Full system supports all 6 domains.</div>
+</div>
+</div>
+
+<!-- S2: PERSONA -->
+<div class="sp" id="s2">
+<div class="si">
+  <div class="ey">Step 2 — Persona</div>
+  <div class="sh">How should your AI<br><em>talk</em> to people?</div>
+  <p class="ss">This defines the personality and communication style — not just what it knows, but how it delivers that knowledge.</p>
+  <div class="g5">
+    <div class="pc locked" data-val="Chatbot"><div class="chk"></div><span class="em">💬</span><div class="pt">Chatbot</div><div class="pd">Friendly, warm, adapts depth to the question</div></div>
+    <div class="pc" data-val="Reasoning Agent" onclick="pick(this,'persona')"><div class="chk"></div><span class="em">🔎</span><div class="pt">Reasoner</div><div class="pd">Shows every step of its thinking before answering</div></div>
+    <div class="pc locked" data-val="Socratic Tutor"><div class="chk"></div><span class="em">🎓</span><div class="pt">Tutor</div><div class="pd">Guides with questions, never just gives the answer</div></div>
+    <div class="pc locked" data-val="Python Coder"><div class="chk"></div><span class="em">⌨️</span><div class="pt">Coder</div><div class="pd">Always writes real, runnable Python with comments</div></div>
+    <div class="pc locked" data-val="Structured Data Extractor"><div class="chk"></div><span class="em">📋</span><div class="pt">Extractor</div><div class="pd">Outputs clean structured JSON for automation</div></div>
+  </div>
+  <div class="notice na" style="font-size:11px">🔒 Only Reasoning Agent is available in this demo.</div>
+</div>
+</div>
+
+<!-- S3: MODEL -->
+<div class="sp" id="s3">
+<div class="si">
+  <div class="ey">Step 3 — Base Model</div>
+  <div class="sh">Pick your<br><em>base model</em></div>
+  <p class="ss">Bigger models know more and reason better, but need more GPU memory. On a free Colab T4, the 8B fast-load option is the sweet spot.</p>
+  <div class="glbl">Original Qwen3 Weights</div>
+  <div class="g5">
+    <div class="pc locked" data-val="Qwen/Qwen3-1.7B"><div class="chk"></div><div class="mn">1.7B</div><div class="ms">Ultra Compact</div><div class="md">Best for testing.</div><div class="mv">~2 GB</div></div>
+    <div class="pc locked" data-val="Qwen/Qwen3-4B"><div class="chk"></div><div class="mn">4B</div><div class="ms">Compact</div><div class="md">Good for simple chatbots.</div><div class="mv">~4 GB</div></div>
+    <div class="pc locked" data-val="Qwen/Qwen3-8B"><div class="chk"></div><div class="mn">8B</div><div class="ms">Strong Reasoner</div><div class="md">Handles complex domain questions well.</div><div class="mv">~6 GB</div></div>
+    <div class="pc locked" data-val="Qwen/Qwen3-14B"><div class="chk"></div><div class="mn">14B</div><div class="ms">Deep Knowledge</div><div class="md">Near-expert medical reasoning.</div><div class="mv">~10 GB</div></div>
+    <div class="pc locked" data-val="Qwen/Qwen3-32B"><div class="chk"></div><div class="mn">32B</div><div class="ms">Near GPT-4</div><div class="md">Exceptional quality.</div><div class="mv">~20 GB</div></div>
+  </div>
+  <div class="glbl tl">⚡ Fast-Load Variants — 4-bit quantized by Unsloth · same quality · 3× smaller</div>
+  <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+    <div class="mc fast" data-val="unsloth/Qwen3-8B-bnb-4bit" onclick="pick(this,'model')" style="position:relative">
+      <div class="pbadge">Recommended</div><div class="chk"></div>
+      <div class="mn">8B Fast</div><div class="ms">Best for Colab T4</div>
+      <div class="md">4-bit quantized by Unsloth. Same quality as 8B original, downloads ~5 GB instead of 16 GB. Best choice for most users.</div>
+      <div class="mv">~6 GB memory</div><div class="mg">T4 / RTX 3080+ · ~5 GB download</div>
+    </div>
+    <div class="mc fast locked" data-val="unsloth/Qwen3-14B-bnb-4bit" style="position:relative"><div class="chk"></div><div class="mn">14B Fast</div><div class="ms">Deep Knowledge</div><div class="md">4-bit quantized by Unsloth. All the richness of 14B.</div><div class="mv">~10 GB</div></div>
+    <div class="mc fast locked" data-val="unsloth/Qwen3-32B-bnb-4bit" style="position:relative"><div class="chk"></div><div class="mn">32B Fast</div><div class="ms">Production Grade</div><div class="md">Near GPT-4 quality.</div><div class="mv">~20 GB</div></div>
+  </div>
+  <div class="notice na" style="font-size:11px">🔒 Only 8B Fast-Load is available in this demo.</div>
+</div>
+</div>
+
+<!-- S4: DATA -->
+<div class="sp" id="s4">
+<div class="si">
+  <div class="ey">Step 4 — Your Data</div>
+  <div class="sh">Do you have your own<br><em>knowledge</em> to share?</div>
+  <p class="ss">Three options — choose what fits your situation.</p>
+  <div class="src-cards">
+    <div class="src" id="src-none" onclick="pickSrc('none')">
+      <span class="si2">🗂️</span><div class="st">Use our datasets</div>
+      <div class="sd">Curated, high-quality training data for every domain. No upload needed.</div>
+      <span class="stag">Recommended</span>
+    </div>
+    <div class="src" id="src-doc" onclick="pickSrc('doc')">
+      <span class="si2">📚</span><div class="st">Upload a document</div>
+      <div class="sd">PDF or text file. We read it and generate training questions automatically.</div>
+      <span class="stag">PDF · TXT</span>
+    </div>
+    <div class="src" id="src-qa" onclick="pickSrc('qa')">
+      <span class="si2">📄</span><div class="st">Upload Q&amp;A pairs</div>
+      <div class="sd">Spreadsheet or JSON of questions and answers.</div>
+      <span class="stag">CSV · JSON · Excel</span>
+    </div>
+  </div>
+  <div id="zone-none" style="display:none">
+    <div class="info-box"><span>✅</span><div><strong style="font-family:Syne,sans-serif;font-size:13px">Ready to go</strong><br>We will use our curated medical dataset. Pre-vetted, high-quality sources. No upload needed — just continue.</div></div>
+  </div>
+  <div id="zone-doc" style="display:none">
+    <div id="pdf-drop" class="upz-dummy" onclick="simulatePdfDrop()">
+      <div style="font-size:28px;margin-bottom:8px">📖</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;color:var(--t1);margin-bottom:4px">Drop your document here, or tap to browse</div>
+      <div style="font-size:11px;color:var(--t3);font-weight:300">We clean the text, split it into smart sections, then generate diverse questions from each one.</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--amb);font-family:'JetBrains Mono',monospace">PDF · TXT</div>
+    </div>
+    <div id="pdf-ready" class="pdf-ready" style="display:none">
+      <span style="font-size:22px">📄</span>
+      <div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;color:var(--grn)">medical_textbook_chapter3.pdf</div>
+      <div style="font-size:11px;color:var(--t2);font-weight:300">3.2 MB · ready to synthesise</div></div>
+    </div>
+  </div>
+  <div id="zone-qa" style="display:none">
+    <div id="csv-drop" class="upz-dummy" onclick="simulateCsvDrop()">
+      <div style="font-size:28px;margin-bottom:8px">📋</div>
+      <div style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;color:var(--t1);margin-bottom:4px">Drop your Q&amp;A file here, or tap to browse</div>
+      <div style="font-size:11px;color:var(--t3);font-weight:300">We detect question and answer columns automatically — any naming works.</div>
+      <div style="margin-top:8px;font-size:10px;color:var(--amb);font-family:'JetBrains Mono',monospace">CSV · JSON · XLSX</div>
+    </div>
+    <div id="csv-ready" style="display:none">
+      <div class="pdf-ready">
+        <span style="font-size:22px">📊</span>
+        <div><div style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;color:var(--grn)">medical_qa_dataset.csv</div>
+        <div style="font-size:11px;color:var(--t2);font-weight:300">847 rows · 3 columns · detecting structure…</div></div>
+      </div>
+      <div id="col-mapping" style="display:none;margin-top:10px">
+        <div style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);font-family:'JetBrains Mono',monospace;margin-bottom:8px">DataPrep Agent — Column Detection</div>
+        <div style="background:var(--bg2);border:1px solid var(--bdr);border-radius:10px;overflow:hidden">
+          <div style="padding:8px 12px;background:var(--bg3);font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--bdr)">
+            Detected columns in your file
+          </div>
+          <div id="col-rows"></div>
+        </div>
+        <div id="col-result" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- S5: SYNTHESIS (only shown when doc selected) -->
+<div class="sp" id="s5">
+<div class="si">
+  <div class="ey">Step 5 — Generate Training Data</div>
+  <div class="sh">Synthesising Q&amp;A<br>from your <em>document</em></div>
+  <p class="ss">Our AI is reading your document, splitting it into sections, and generating diverse training questions. Review them before continuing.</p>
+  <div id="synth-banner" style="padding:12px 14px;background:var(--ambd);border:1px solid rgba(250,185,80,.25);border-radius:12px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">
+    <span id="synth-icon" style="font-size:18px;flex-shrink:0">⏳</span>
+    <div>
+      <div id="synth-title" style="font-family:Syne,sans-serif;font-weight:700;font-size:13px;color:var(--amb);margin-bottom:3px">Generate Q&amp;A pairs to unlock training</div>
+      <div id="synth-body" style="font-size:11px;color:var(--t2);font-weight:300;line-height:155%">Click Generate below to read your document and create training questions. You will review them before training starts.</div>
+    </div>
+  </div>
+  <button class="gen-btn" id="gen-btn" onclick="startSynthesis()">⚡ Generate Training Data</button>
+  <div id="synth-feed"></div>
+</div>
+</div>
+
+<!-- S6: REVIEW -->
+<div class="sp" id="s6">
+<div class="si">
+  <div class="ey">Step <span id="rev-step-num">5</span> — Summary</div>
+  <div class="sh">Review your<br><em>configuration</em></div>
+  <p class="ss">Check your selections before training starts. You can go back to change anything.</p>
+  <div class="rev-grid">
+    <div class="rev-card"><div class="rev-label">Domain</div><div class="rev-val">🩺 Medicine</div><div class="rev-sub">Clinical & diagnostics</div></div>
+    <div class="rev-card"><div class="rev-label">Persona</div><div class="rev-val">🔎 Reasoner</div><div class="rev-sub">Step-by-step thinking</div></div>
+    <div class="rev-card"><div class="rev-label">Base Model</div><div class="rev-val">8B Fast</div><div class="rev-sub">Qwen3 · 4-bit · ~6 GB</div></div>
+    <div class="rev-card" id="rev-data-card"><div class="rev-label">Data</div><div class="rev-val" id="rev-data-val">Our datasets</div><div class="rev-sub" id="rev-data-sub">Curated medical</div></div>
+  </div>
+  <div class="info-box" style="margin-bottom:14px">
+    <span>🤖</span>
+    <div id="agents-desc">Three AI agents are handling your pipeline automatically — settings, training, and evaluation are fully managed.</div>
+  </div>
+  <div style="padding:12px 14px;background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;font-size:11px;color:var(--t2);font-weight:300;line-height:155%">
+    <strong style="font-family:Syne,sans-serif;font-size:12px;color:var(--t1)">⚡ What happens next</strong><br>
+    The pipeline will load your model, prepare training data, fine-tune for your domain, evaluate quality across 5 dimensions, and align behaviour — all automatically.
+  </div>
+</div>
+</div>
+
+<!-- S7: PROOF (Questions) -->
+<div class="sp" id="s7">
+<div class="si">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+    <div class="ey" style="margin-bottom:0">Step <span id="proof-step-num">6</span> — Proof Questions</div>
+    <div style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:8px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;background:rgba(56,217,192,.1);border:1px solid rgba(56,217,192,.25);color:var(--tel)">OPTIONAL</div>
+  </div>
+  <div class="sh">Ask your AI<br>before <em>&amp; after</em></div>
+  <p class="ss">Type up to 3 medical questions. The base model and your fine-tuned model will both answer them — you see the difference training makes. Skip this step if you prefer.</p>
+
+  <div class="proof-q" style="margin-bottom:10px">
+    <div class="proof-q-label">Question 1</div>
+    <div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <input class="proof-input" placeholder="Type a medical question…" style="width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--t1);font-weight:400" />
+    </div>
+  </div>
+  <div class="proof-q" style="margin-bottom:10px">
+    <div class="proof-q-label">Question 2</div>
+    <div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <input class="proof-input" placeholder="Type a medical question…" style="width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--t1);font-weight:400" />
+    </div>
+  </div>
+  <div class="proof-q" style="margin-bottom:14px">
+    <div class="proof-q-label">Question 3</div>
+    <div style="padding:10px 0;border-bottom:1px solid var(--bdr)">
+      <input class="proof-input" placeholder="Type a medical question…" style="width:100%;background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--t1);font-weight:400" />
+    </div>
+  </div>
+
+  <button class="ask-btn" style="cursor:not-allowed;opacity:.4;display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px 14px;background:var(--card);border:1px solid var(--bdr);border-radius:10px;color:var(--t3);font-family:'Syne',sans-serif;font-weight:700;font-size:11px">
+    🔒 Ask Model — available after training completes
+  </button>
+  <div class="notice ni" style="margin-top:12px">💡 This step is optional. If you write questions here, both the base model and your fine-tuned model will answer them so you can see exactly what training changed.</div>
+</div>
+</div>
+
+<!-- S8: TRAINING -->
+<div class="sp" id="s8">
+<div class="si" style="padding-bottom:20px">
+  <div class="ey">Step <span id="train-step-num">7</span> — Training</div>
+  <div class="sh" style="margin-bottom:12px">Training your<br><em>AI model</em></div>
+  <div class="train-header">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="dot idle" id="t-dot"></div>
+      <div>
+        <div class="t-ph-label" id="t-ph">READY TO TRAIN</div>
+        <div class="t-tx-label" id="t-tx">Click ▶ Start Training when you are ready.</div>
+      </div>
+    </div>
+    <div class="slim-bar"><div class="slim-fill" id="t-fill"></div></div>
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:10px;color:var(--t3);font-family:'JetBrains Mono',monospace" id="t-slbl"></div>
+      <div style="font-size:10px;color:var(--amb);font-family:'JetBrains Mono',monospace" id="t-pct">0%</div>
+    </div>
+    <div class="stages">
+      <div class="stg" id="stg0">Preparing data</div>
+      <div class="stg" id="stg1">Teaching model</div>
+      <div class="stg" id="stg2">Testing quality</div>
+      <div class="stg" id="stg3">Finalising</div>
+    </div>
+  </div>
+  <div id="prog-wrap" style="display:none"></div>
+  <div id="start-wrap" style="text-align:center;padding:20px 0">
+    <button id="btn-start" onclick="startSim()" style="padding:14px 32px;background:var(--btn);color:var(--btnt);border:none;border-radius:12px;font-family:Syne,sans-serif;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 6px 24px var(--ambg);width:100%;max-width:280px">▶ Start Training</button>
+  </div>
+</div>
+</div>
+
+</div><!-- /pages -->
+
+<!-- BOTTOM NAV -->
+<div id="nav">
+  <button class="nav-btn" id="btn-back" onclick="goBack()" disabled>← Back</button>
+  <button class="nav-btn primary" id="btn-next" onclick="goNext()">Get Started →</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════════════════
+const S = {domain:'', persona:'', model:'', src:'none', synthDone:false};
+let cur = 0;
+let simRunning = false;
+let simTimer = null;
+
+// Step flow: 0=welcome,1=domain,2=persona,3=model,4=data,
+//            5=synthesis(optional),6=review,7=proof,8=training
+// When src=doc: steps 0-4, then 5(synth), then 6-8
+// When src=none/qa: steps 0-4, then 6-8 (skip 5)
+function getSteps() {
+  return S.src === 'doc' ? [0,1,2,3,4,5,6,7,8] : [0,1,2,3,4,6,7,8];
+}
+function curStepIndex() { return getSteps().indexOf(cur); }
+function totalSteps() { return getSteps().length; }
+
+// ════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════════
+function goTo(pageId) {
+  const old = document.getElementById('s'+cur);
+  const el  = document.getElementById('s'+pageId);
+  if (!el) return;
+  if (old) old.classList.remove('active');
+  // Determine direction
+  const steps = getSteps();
+  const fromIdx = steps.indexOf(cur);
+  const toIdx   = steps.indexOf(pageId);
+  if (old) old.classList.toggle('past', toIdx > fromIdx);
+  cur = pageId;
+  el.classList.remove('past');
+  el.classList.add('active');
+  updateNav();
+  updateStepNumbers();
+}
+
+function goNext() {
+  if (!validateStep()) return;
+  const steps = getSteps();
+  const idx = curStepIndex();
+  if (idx < steps.length - 1) goTo(steps[idx + 1]);
+}
+
+function goBack() {
+  if (simRunning) return;
+  const steps = getSteps();
+  const idx = curStepIndex();
+  if (idx > 0) goTo(steps[idx - 1]);
+}
+
+function validateStep() {
+  if (cur === 1 && !S.domain) { toast('Tap Medicine to select your domain', 'warn'); return false; }
+  if (cur === 2 && !S.persona) { toast('Tap Reasoning Agent to continue', 'warn'); return false; }
+  if (cur === 3 && !S.model) { toast('Tap 8B Fast-Load to continue', 'warn'); return false; }
+  if (cur === 5 && !S.synthDone) { toast('Generate training data first', 'warn'); return false; }
+  return true;
+}
+
+function updateNav() {
+  const back = document.getElementById('btn-back');
+  const next = document.getElementById('btn-next');
+  const idx = curStepIndex();
+  back.disabled = idx === 0 || simRunning;
+  if (cur === 8) {
+    next.style.display = 'none';
+  } else {
+    next.style.display = '';
+    next.textContent = idx === totalSteps() - 2 ? '▶ Start Training' : 'Continue →';
+    next.className = 'nav-btn primary';
+  }
+  if (cur === 6) {
+    next.textContent = 'Continue →';
+  }
+}
+
+function updateStepNumbers() {
+  const steps = getSteps();
+  const idx = curStepIndex();
+  // Update step numbers in review/proof/train
+  const revNum   = document.getElementById('rev-step-num');
+  const proofNum = document.getElementById('proof-step-num');
+  const trainNum = document.getElementById('train-step-num');
+  if (revNum)   revNum.textContent   = String(steps.indexOf(6) + 1);
+  if (proofNum) proofNum.textContent = String(steps.indexOf(7) + 1);
+  if (trainNum) trainNum.textContent = String(steps.indexOf(8) + 1);
+}
+
+// ════════════════════════════════════════════════════════════════
+// PICKERS
+// ════════════════════════════════════════════════════════════════
+function pick(el, type) {
+  if (el.classList.contains('locked')) return;
+  document.querySelectorAll('.pc[data-val], .mc[data-val]').forEach(e => {
+    if (!e.classList.contains('locked')) {
+      // Only deselect within same type
+      const parent = e.closest('.g3, .g5, [style]');
+      e.classList.remove('selected');
+    }
+  });
+  // Deselect all in the current page
+  el.closest('.si').querySelectorAll('.pc,.mc').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  S[type] = el.dataset.val;
+  // Auto-advance after short delay
+  setTimeout(() => goNext(), 300);
+}
+
+function pickSrc(src) {
+  S.src = src;
+  document.querySelectorAll('.src').forEach(e => e.classList.remove('sel'));
+  const el = document.getElementById('src-' + src);
+  if (el) el.classList.add('sel');
+  // Show/hide zones
+  ['none','doc','qa'].forEach(z => {
+    const zone = document.getElementById('zone-' + z);
+    if (zone) zone.style.display = z === src ? '' : 'none';
+  });
+  // Update review card
+  const rv = document.getElementById('rev-data-val');
+  const rs = document.getElementById('rev-data-sub');
+  const ad = document.getElementById('agents-desc');
+  if (src === 'none') {
+    if (rv) rv.textContent = 'Our datasets';
+    if (rs) rs.textContent = 'Curated medical';
+    if (ad) ad.textContent = 'Three AI agents are handling your pipeline automatically — settings, training, and evaluation are fully managed.';
+  } else if (src === 'doc') {
+    if (rv) rv.textContent = '📄 Document';
+    if (rs) rs.textContent = 'PDF synthesis';
+    if (ad) ad.textContent = 'Four AI agents are handling your pipeline — reading your document, synthesis, training, and evaluation are fully managed.';
+  } else {
+    if (rv) rv.textContent = '📋 Q&A file';
+    if (rs) rs.textContent = 'Custom pairs';
+    if (ad) ad.textContent = 'Three AI agents are handling your pipeline automatically.';
+  }
+  // Deselect src cards that arent selected
+  // No auto-advance for any source — user taps Continue themselves
+}
+
+// ════════════════════════════════════════════════════════════════
+// SYNTHESIS SIMULATION
+// ════════════════════════════════════════════════════════════════
+function simulatePdfDrop() {
+  const drop = document.getElementById('pdf-drop');
+  const ready = document.getElementById('pdf-ready');
+  if (!drop || !ready) return;
+  drop.style.display = 'none';
+  ready.style.display = 'flex';
+  toast('Document loaded — tap Generate to synthesise Q&A pairs', 'info');
+}
+
+const CSV_COLUMNS = [
+  {raw:'Ques',           mapped:'question', confidence:91, status:'ok',
+   note:'Matched "Ques" → question column (91% confidence)'},
+  {raw:'Ans_Text',       mapped:'answer',   confidence:88, status:'ok',
+   note:'Matched "Ans_Text" → answer column (88% confidence)'},
+  {raw:'Category_Tag',   mapped:'ignored',  confidence:null, status:'ignored',
+   note:'Not a question or answer column — ignored during training'},
+];
+
+function simulateCsvDrop() {
+  const drop = document.getElementById('csv-drop');
+  const ready = document.getElementById('csv-ready');
+  if (!drop || !ready) return;
+  drop.style.display = 'none';
+  ready.style.display = '';
+  // Animate column detection
+  setTimeout(() => {
+    const mapping = document.getElementById('col-mapping');
+    if (mapping) mapping.style.display = '';
+    const rows = document.getElementById('col-rows');
+    if (!rows) return;
+    rows.innerHTML = '';
+    CSV_COLUMNS.forEach((col, i) => {
+      setTimeout(() => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding:10px 12px;border-bottom:1px solid var(--bdr);animation:fu .25s ease';
+        const statusColor = col.status === 'ok' ? 'var(--grn)' : 'var(--t3)';
+        const statusIcon  = col.status === 'ok' ? '✓' : '○';
+        const mappedLabel = col.status === 'ok'
+          ? '<span style="font-family:JetBrains Mono,monospace;font-size:10px;padding:2px 7px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);border-radius:4px;color:var(--grn)">' + col.mapped + '</span>'
+          : '<span style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--t3)">skipped</span>';
+        row.innerHTML =
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">' +
+            '<div style="display:flex;align-items:center;gap:6px">' +
+              '<span style="color:' + statusColor + ';font-size:11px">' + statusIcon + '</span>' +
+              '<code style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--amb);background:var(--ambd);padding:2px 6px;border-radius:4px">' + col.raw + '</code>' +
+              '<span style="font-size:11px;color:var(--t3)">→</span>' +
+              mappedLabel +
+            '</div>' +
+            (col.confidence ? '<span style="font-size:9px;color:var(--t3);font-family:JetBrains Mono,monospace">' + col.confidence + '%</span>' : '') +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--t2);font-weight:300;line-height:140%">' + col.note + '</div>';
+        rows.appendChild(row);
+        // Show result after last column
+        if (i === CSV_COLUMNS.length - 1) {
+          setTimeout(() => {
+            const result = document.getElementById('col-result');
+            if (result) {
+              result.style.display = '';
+              result.innerHTML =
+                '<div style="padding:12px 14px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.22);border-radius:10px">' +
+                  '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+                    '<span style="font-size:16px">✅</span>' +
+                    '<strong style="font-family:Syne,sans-serif;font-size:13px;color:var(--grn)">847 Q&A pairs ready</strong>' +
+                  '</div>' +
+                  '<div style="font-size:11px;color:var(--t2);font-weight:300;line-height:155%">Column mapping confirmed: <code style="color:var(--amb);font-family:JetBrains Mono,monospace">Ques</code> → question, <code style="color:var(--amb);font-family:JetBrains Mono,monospace">Ans_Text</code> → answer. The <code style="color:var(--t3);font-family:JetBrains Mono,monospace">Category_Tag</code> column was automatically ignored. No formatting required from you.</div>' +
+                '</div>';
+              S.src = 'qa';
+              // Update review card
+              const rv = document.getElementById('rev-data-val');
+              const rs = document.getElementById('rev-data-sub');
+              if (rv) rv.textContent = '📊 Q&A file';
+              if (rs) rs.textContent = '847 pairs · mapped';
+              toast('✓ 847 Q&A pairs ready — continue to proceed', 'info');
+            }
+          }, 400);
+        }
+      }, i * 600);
+    });
+  }, 800);
+}
+
+const SYNTH_SCRIPT = [
+  {t:400, type:'init', text:'✓ Document read — 4 sections, 2,847 words total'},
+  {t:900, type:'chunk', idx:0, title:'SECTION 1 of 4 · 680 words', preview:'Cardiovascular emergencies and acute management protocols...', fullText:'Cardiovascular Emergencies\n\nCardiovascular emergencies require rapid recognition and systematic management. The cornerstone of emergency cardiac care is the primary survey: Airway, Breathing, Circulation. In anaphylaxis, the first-line treatment is intramuscular epinephrine 0.5mg into the anterolateral thigh. Delay in administration is the leading cause of preventable death. Antihistamines and corticosteroids are adjunctive — never first-line. Acute coronary syndromes require ECG within 10 minutes, aspirin 300mg, and urgent cardiology review. Cardiogenic shock is characterised by hypotension despite adequate preload. Frank-Starling mechanism is overwhelmed when >40% of LV mass is infarcted.'},
+  {t:1800, type:'pair_ok', idx:0, ptype:'FACTUAL', color:'#fab950', ground:92,
+    q:'What is the first-line pharmacological treatment for anaphylaxis?',
+    a:'Intramuscular epinephrine (adrenaline) at 0.5mg (adult) into the outer thigh. It is the only first-line treatment — antihistamines and steroids are adjuncts only.'},
+  {t:2500, type:'pair_ok', idx:0, ptype:'APPLICATION', color:'#60a5fa', ground:88,
+    q:'A 72-year-old presents with acute chest pain radiating to the left arm. List the immediate management steps.',
+    a:'Step 1: 12-lead ECG within 10 minutes. Step 2: Aspirin 300mg oral. Step 3: Oxygen if sats <94%. Step 4: IV access and bloods including troponin. Step 5: Nitrates if BP >90 systolic.'},
+  {t:3100, type:'pair_rej', idx:0, ptype:'FACTUAL', reason:'doc_reference',
+    q:'Based on the above text, what dosage of epinephrine is mentioned for paediatric use?'},
+  {t:3600, type:'pair_ok', idx:0, ptype:'CONCEPTUAL', color:'#38d9c0', ground:94,
+    q:'Explain the pathophysiology of cardiogenic shock.',
+    a:'Cardiogenic shock occurs when cardiac output falls below the level needed to maintain adequate tissue perfusion. Primary cause is myocardial infarction affecting >40% of LV mass. The Frank-Starling mechanism is overwhelmed...'},
+  {t:4200, type:'chunk', idx:1, title:'SECTION 2 of 4 · 712 words', preview:'Pharmacology of anticoagulation and reversal agents...', fullText:'Anticoagulation Pharmacology\n\nWarfarin acts by inhibiting Vitamin K epoxide reductase, reducing synthesis of clotting factors II, VII, IX and X. INR monitoring is mandatory — therapeutic range 2.0–3.0 for AF and DVT, 2.5–3.5 for mechanical heart valves. Supratherapeutic INR management: INR 5–8 without bleeding → withhold warfarin, oral Vitamin K 1–2mg. INR >8 with minor bleeding → oral Vitamin K 2.5–5mg. Major bleeding → PCC (prothrombin complex concentrate) + IV Vitamin K 5–10mg immediately. Direct oral anticoagulants (DOACs) include apixaban, rivaroxaban, dabigatran, and edoxaban. They offer predictable pharmacokinetics, fixed dosing, and no routine monitoring. Reversal agents: idarucizumab for dabigatran, andexanet alfa for Factor Xa inhibitors.'},
+  {t:5000, type:'pair_ok', idx:1, ptype:'FACTUAL', color:'#fab950', ground:96,
+    q:'What is the antidote for warfarin overdose with active bleeding?',
+    a:'Prothrombin complex concentrate (PCC) is preferred for rapid reversal plus IV Vitamin K 5–10mg. Fresh frozen plasma is an alternative but slower. For non-bleeding with INR >8, oral Vitamin K alone is sufficient.'},
+  {t:5600, type:'pair_rej', idx:1, ptype:'COMPARATIVE', reason:'answer_too_short',
+    q:'Compare DOACs and warfarin.',
+    a:'DOACs are easier.'},
+  {t:6100, type:'pair_ok', idx:1, ptype:'COMPARATIVE', color:'#a78bfa', ground:85,
+    q:'What are the advantages of direct oral anticoagulants over warfarin?',
+    a:'DOACs offer predictable pharmacokinetics without routine INR monitoring, fewer drug interactions, fixed dosing, and faster onset. Warfarin advantages include reversibility with Vitamin K, lower cost, and decades of safety data.'},
+  {t:6800, type:'chunk', idx:2, title:'SECTION 3 of 4 · 695 words', preview:'Respiratory emergencies — asthma and COPD exacerbations...', fullText:'Respiratory Emergencies\n\nAcute severe asthma: PEFR 33–50% predicted, SpO2 <92%, or respiratory rate >25/min. Management: high-flow oxygen (target 94–98%), back-to-back salbutamol 5mg nebulisers, ipratropium 0.5mg, prednisolone 40–50mg oral/IV. If no improvement in 15–30 minutes: IV magnesium sulphate 1.2–2g over 20 minutes. Life-threatening features (silent chest, cyanosis, exhaustion) require immediate ITU referral and consideration of intubation.\n\nCOPD exacerbation: controlled oxygen therapy essential. Target SpO2 88–92% to avoid suppressing hypoxic drive. Use 24% or 28% Venturi masks. NIV (non-invasive ventilation) if pH <7.35 and pCO2 >6kPa despite medical therapy. Driving spirometry with salbutamol and ipratropium. Early steroids (prednisolone 30mg) reduce recovery time.'},
+  {t:7500, type:'pair_ok', idx:2, ptype:'APPLICATION', color:'#60a5fa', ground:91,
+    q:'List the stepwise management of a severe acute asthma attack.',
+    a:'Step 1: High-flow oxygen. Step 2: Back-to-back salbutamol nebulisers. Step 3: Ipratropium bromide nebuliser. Step 4: IV/oral prednisolone 40–50mg. Step 5: Magnesium sulphate 1.2–2g IV over 20 minutes if poor response. Step 6: ITU review if no improvement.'},
+  {t:8100, type:'pair_ok', idx:2, ptype:'FACTUAL', color:'#fab950', ground:89,
+    q:'What oxygen target is appropriate for COPD patients on supplemental oxygen?',
+    a:'88–92% — higher targets risk hypercapnic respiratory failure in COPD patients who rely on hypoxic drive. Use controlled low-flow oxygen and titrate carefully.'},
+  {t:8800, type:'chunk', idx:3, title:'SECTION 4 of 4 · 760 words', preview:'Neurological emergencies and acute stroke protocol...', fullText:'Neurological Emergencies\n\nAcute ischaemic stroke: FAST recognition (Face drooping, Arm weakness, Speech difficulty, Time to call). CT brain excludes haemorrhage before thrombolysis. IV alteplase (0.9mg/kg, max 90mg) within 4.5 hours of onset in eligible patients. Mechanical thrombectomy for large vessel occlusion: can be offered up to 24 hours with salvageable tissue on MRI/CT perfusion imaging. Blood pressure management: do not lower BP unless >220/120 (unless thrombolysis planned: target <185/110 before and <180/105 after).\n\nStatus epilepticus: lorazepam 0.1mg/kg IV (max 4mg) as first-line. If no IV access: buccal midazolam 10mg or rectal diazepam. Second line if seizure continues >5 min after benzodiazepine: levetiracetam 60mg/kg IV or valproate 40mg/kg IV. Refractory status: anaesthesia with propofol or thiopental.'},
+  {t:9600, type:'pair_ok', idx:3, ptype:'FACTUAL', color:'#fab950', ground:93,
+    q:'What is the thrombolysis time window for ischaemic stroke?',
+    a:'4.5 hours from symptom onset for IV alteplase in eligible patients. Mechanical thrombectomy extends to 24 hours for large vessel occlusion with salvageable tissue on imaging.'},
+  {t:10200, type:'pair_rej', idx:3, ptype:'CONCEPTUAL', reason:'low_groundedness',
+    q:'What are all the causes of headache?'},
+  {t:10800, type:'done'}
+];
+
+function startSynthesis() {
+  const btn = document.getElementById('gen-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generating…'; }
+  const icon  = document.getElementById('synth-icon');
+  const title = document.getElementById('synth-title');
+  const body  = document.getElementById('synth-body');
+  if (icon)  icon.textContent = '⚡';
+  if (title) title.textContent = 'Reading document and generating Q&A pairs…';
+  if (body)  body.textContent = 'Our synthesis agent is splitting your document into sections and generating diverse training questions from each one.';
+  const feed = document.getElementById('synth-feed');
+  if (feed) feed.innerHTML = '';
+  let chunks = {};
+  SYNTH_SCRIPT.forEach(evt => {
+    setTimeout(() => playEvent(evt, feed, chunks), evt.t);
+  });
+}
+
+function playEvent(evt, feed, chunks) {
+  if (evt.type === 'init') {
+    const n = document.createElement('div');
+    n.className = 'notice ni'; n.style.marginBottom = '10px';
+    n.textContent = evt.text;
+    feed.appendChild(n);
+  } else if (evt.type === 'chunk') {
+    const box = document.createElement('div');
+    box.className = 'c-chunk';
+    box.innerHTML =
+      '<div class="c-hdr" onclick="toggleChunk(this)">' +
+        '<span style="flex-shrink:0">' + evt.title + '</span>' +
+        '<span style="display:flex;align-items:center;gap:6px;min-width:0">' +
+          '<span style="font-size:10px;color:var(--t3);font-style:italic;font-family:DM Sans,sans-serif;text-transform:none;letter-spacing:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:110px">' + esc(evt.preview) + '</span>' +
+          '<span class="c-toggle">▾ Read</span>' +
+        '</span>' +
+      '</div>' +
+      '<div class="c-txt">' + esc(evt.fullText || evt.preview) + '</div>';
+    feed.appendChild(box);
+    chunks[evt.idx] = box;
+    feed.scrollTop = feed.scrollHeight;
+  } else if (evt.type === 'pair_ok') {
+    const box = chunks[evt.idx]; if (!box) return;
+    const p = document.createElement('div');
+    p.className = 'c-pair ok';
+    p.innerHTML = '<div class="c-ptype" style="color:'+evt.color+'"><span style="font-size:11px">✓</span> '+evt.ptype+' · grounded '+evt.ground+'%</div><div class="c-q">'+esc(evt.q)+'</div><div class="c-a">'+esc(evt.a)+'</div>';
+    box.appendChild(p);
+    feed.scrollTop = feed.scrollHeight;
+  } else if (evt.type === 'pair_rej') {
+    const box = chunks[evt.idx]; if (!box) return;
+    const REASONS = {
+      doc_reference:   {label:'Explicit document reference',    why:'The question contains a phrase like "the above text", "this passage", or "the excerpt" — meaning it is only answerable by reading the document, not from memory. A trained model has no access to the source document at inference time.'},
+      answer_too_short:{label:'Answer too brief',              why:'The generated answer was fewer than 30 words and lacks enough detail to be a useful training example. Minimum answer length is enforced for quality.'},
+      answer_too_long: {label:'Answer too long',               why:'The answer exceeded the maximum token budget. Very long answers increase training cost without proportional quality gain.'},
+      low_groundedness:{label:'Low groundedness score',        why:'The answer contains claims not supported by the source text. Groundedness score was below the 0.70 threshold — training on ungrounded pairs can introduce hallucinations.'},
+      duplicate:       {label:'Duplicate question',            why:'A near-identical question was already accepted from this document. Duplicates waste training capacity and can cause the model to overfit on one specific phrasing.'},
+    };
+    const r = REASONS[evt.reason] || {label: evt.reason || 'unknown', why: 'This pair did not meet the quality filter criteria.'};
+    const p = document.createElement('div');
+    p.className = 'c-pair rej';
+    p.innerHTML =
+      '<div class="c-ptype" style="color:var(--red);display:flex;align-items:center;gap:5px">' +
+        '<span style="font-size:11px">✗</span>' + (evt.ptype||'?') +
+        '<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:rgba(248,113,113,.15);border:1px solid rgba(248,113,113,.25);color:var(--red);font-family:JetBrains Mono,monospace;letter-spacing:.04em">' + r.label + '</span>' +
+      '</div>' +
+      '<div class="c-q" style="color:var(--t3)">' + esc(evt.q||'') + '</div>' +
+      '<div class="c-rej-reason">' +
+        '<strong>Why rejected:</strong> ' + r.why +
+      '</div>';
+    box.appendChild(p);
+    feed.scrollTop = feed.scrollHeight;
+  } else if (evt.type === 'done') {
+    S.synthDone = true;
+    // Remove the Generate button entirely — no longer needed
+    const genBtn = document.getElementById('gen-btn');
+    if (genBtn) genBtn.remove();
+    const icon  = document.getElementById('synth-icon');
+    const title = document.getElementById('synth-title');
+    const body  = document.getElementById('synth-body');
+    const banner = document.getElementById('synth-banner');
+    if (banner) { banner.style.background='rgba(52,211,153,.07)'; banner.style.borderColor='rgba(52,211,153,.28)'; }
+    if (icon)  icon.textContent = '✅';
+    if (title) { title.textContent = 'Generation complete — ready to continue'; title.style.color='var(--grn)'; }
+    if (body)  body.textContent = '8 Q&A pairs accepted from 11 generated (73% acceptance rate). Review them below, then tap Continue.';
+    // Show stats
+    const statsDiv = document.createElement('div');
+    statsDiv.style.cssText = 'margin-top:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--bdr);border-radius:10px';
+    statsDiv.innerHTML =
+      '<div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:10px;font-family:\'JetBrains Mono\',monospace">Quality Report</div>'+
+      '<div style="font-family:\'Syne\',sans-serif;font-weight:800;font-size:26px;color:var(--grn);margin-bottom:2px">8</div>'+
+      '<div style="font-size:11px;color:var(--t3);font-weight:300;margin-bottom:10px">from 11 raw &nbsp;(73%)</div>'+
+      '<div style="height:1px;background:var(--bdr);margin:8px 0"></div>'+
+      '<div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:5px;font-family:\'JetBrains Mono\',monospace">Question types</div>'+
+      '<div class="srow"><span class="slbl">Factual</span><span>4</span></div>'+
+      '<div class="srow"><span class="slbl">Application</span><span>2</span></div>'+
+      '<div class="srow"><span class="slbl">Conceptual</span><span>1</span></div>'+
+      '<div class="srow"><span class="slbl">Comparative</span><span>1</span></div>'+
+      '<div style="height:1px;background:var(--bdr);margin:8px 0"></div>'+
+      '<div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--t3);margin-bottom:5px;font-family:\'JetBrains Mono\',monospace">Rejections</div>'+
+      '<div class="srow"><span class="slbl">doc reference</span><span style="color:var(--red)">2</span></div>'+
+      '<div class="srow"><span class="slbl">answer too short</span><span style="color:var(--red)">1</span></div>';
+    feed.insertBefore(statsDiv, feed.firstChild);
+    toast('✓ 8 Q&A pairs ready — tap Continue', 'info');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// TRAINING SIMULATION
+// ════════════════════════════════════════════════════════════════
+const PHASES = [
+  {key:'INIT',      label:'Loading your AI model',        emoji:'🤖', info:'Bringing the base model into GPU memory.',   dur:2000, pct:3,  stage:0},
+  {key:'PREFLIGHT', label:'Pre-flight check',             emoji:'🔎', info:'Checking for a pre-built adapter matching your selection.', dur:1200, pct:5,  stage:0},
+  {key:'DATA',      label:'Gathering training knowledge', emoji:'📚', info:'Fetching curated domain data for your AI.', dur:2500, pct:10, stage:0},
+  {key:'DETECT',    label:'Analysing your data',          emoji:'🔍', info:'Checking the quality of your training material.', dur:1500, pct:14, stage:0},
+  {key:'HYPERPARAMS',label:'Choosing training settings',  emoji:'⚙️',  info:'Selecting the best learning rate and adapter size.', dur:1800, pct:18, stage:0},
+  {key:'STRATEGY',  label:'Planning the approach',        emoji:'🗺️',  info:null,                                         dur:1200, pct:20, stage:0},
+  {key:'TRAINING',  label:'Teaching the model',           emoji:'🧠', info:null,                                         dur:16000,pct:75, stage:1, train:true},
+  {key:'EVALUATION',label:'Checking quality',             emoji:'🔬', info:'Scoring your model across 5 quality dimensions.', dur:6000, pct:90, stage:2},
+  {key:'DPO',       label:'Aligning behaviour',           emoji:'🎯', info:null,                                         dur:3000, pct:98, stage:3, dpo:true},
+  {key:'SAVING',    label:'Saving your model',            emoji:'💾', info:'Writing your trained adapter to Google Drive.', dur:1500, pct:100,stage:3},
+  {key:'COMPLETE',  label:'All done!',                    emoji:'✅', info:'Your AI is trained and ready to use.',       dur:0,    pct:100, stage:3},
+];
+
+function startSim() {
+  if (simRunning) return;
+  simRunning = true;
+  const startWrap = document.getElementById('start-wrap');
+  if (startWrap) startWrap.style.display = 'none';
+  const pw = document.getElementById('prog-wrap');
+  if (pw) { pw.innerHTML = ''; pw.style.display = ''; }
+  setDot('running');
+  document.getElementById('btn-back').disabled = true;
+  document.getElementById('btn-next').style.display = 'none';
+
+  let phaseIdx = 0;
+  let activeStep = null;
+
+  function runPhase(idx) {
+    if (idx >= PHASES.length) return;
+    const ph = PHASES[idx];
+    // Mark previous done
+    if (activeStep && ph.key !== 'COMPLETE') markDone(activeStep);
+    // Update slim bar
+    const tf = document.getElementById('t-fill');
+    const tp = document.getElementById('t-pct');
+    const tl = document.getElementById('t-slbl');
+    if (tf) tf.style.width = ph.pct + '%';
+    if (tp) tp.textContent = ph.pct + '%';
+    const stgLabels = ['Preparing data','Teaching the model','Evaluating quality','Finalising'];
+    if (tl) tl.textContent = stgLabels[ph.stage] || '';
+    // Update stage boxes
+    for (let i = 0; i < 4; i++) {
+      const s = document.getElementById('stg'+i);
+      if (!s) continue;
+      if (i < ph.stage) s.className = 'stg dn';
+      else if (i === ph.stage) s.className = 'stg act';
+      else s.className = 'stg';
+    }
+    // Update header text
+    document.getElementById('t-ph').textContent = ph.label.toUpperCase();
+    document.getElementById('t-tx').textContent = ph.info || '';
+
+    if (ph.key === 'COMPLETE') {
+      if (activeStep) markDone(activeStep);
+      setDot('done');
+      document.getElementById('t-ph').textContent = 'ALL DONE!';
+      document.getElementById('t-tx').textContent = 'Your AI is trained and ready. The presenter will now show you the real results.';
+      addStep(ph.label, ph.emoji, 'done');
+      simRunning = false;
+      // Re-enable back button so user can review their selections
+      const backBtn = document.getElementById('btn-back');
+      if (backBtn) backBtn.disabled = false;
+      // Show completion message
+      setTimeout(() => {
+        const pw2 = document.getElementById('prog-wrap');
+        const fin = document.createElement('div');
+        fin.style.cssText = 'margin-top:14px;padding:16px;background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.25);border-radius:14px;text-align:center';
+        fin.innerHTML = '<div style="font-size:28px;margin-bottom:8px">🎉</div><div style="font-family:Syne,sans-serif;font-weight:800;font-size:16px;color:var(--grn);margin-bottom:6px">Training Complete!</div><div style="font-size:12px;color:var(--t2);font-weight:300;line-height:155%">Your medical Reasoning Agent has been trained. The presenter will now show you the real results on the main screen.</div>';
+        if (pw2) pw2.appendChild(fin);
+      }, 500);
+      return;
+    }
+
+    // Build step card
+    const el = addStep(ph.label, ph.emoji, 'spinning', ph.info);
+    activeStep = el;
+
+    if (ph.train) {
+      // Animate training steps
+      const totalStepCount = 594;
+      const stepDur = ph.dur;
+      let elapsed = 0;
+      const interval = 80;
+      const stepTimer = setInterval(() => {
+        elapsed += interval;
+        const progress = Math.min(elapsed / stepDur, 1);
+        const curStep = Math.round(progress * totalStepCount);
+        const etaSec  = Math.round((1 - progress) * stepDur / 1000);
+        const mins = Math.floor(etaSec / 60), secs = etaSec % 60;
+        const pct = Math.round(progress * 100);
+        const barPct = Math.round(20 + progress * 55);
+        if (tf) tf.style.width = barPct + '%';
+        if (tp) tp.textContent = barPct + '%';
+        const loss = (0.95 - progress * 0.55 + Math.random() * 0.08).toFixed(4);
+        updateSubMsg(el, pct + '% complete · ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's remaining');
+        document.getElementById('t-tx').textContent = 'Training in progress…';
+        if (elapsed >= stepDur) { clearInterval(stepTimer); runPhase(idx + 1); }
+      }, interval);
+    } else if (ph.dpo) {
+      // Animate DPO steps
+      const dpoSteps = 50;
+      const stepDur = ph.dur;
+      let elapsed = 0;
+      const interval = 60;
+      const dpoTimer = setInterval(() => {
+        elapsed += interval;
+        const progress = Math.min(elapsed / stepDur, 1);
+        const curStep = Math.round(progress * dpoSteps);
+        const etaSec  = Math.round((1 - progress) * stepDur / 1000);
+        const mins = Math.floor(etaSec / 60), secs = etaSec % 60;
+        const pct = Math.round(progress * 100);
+        const barPct = Math.round(90 + progress * 8);
+        if (tf) tf.style.width = barPct + '%';
+        if (tp) tp.textContent = barPct + '%';
+        const loss = (0.85 - progress * 0.4 + Math.random() * 0.05).toFixed(4);
+        updateSubMsg(el, pct + '% complete · ' + String(mins).padStart(2,'0') + 'm ' + String(secs).padStart(2,'0') + 's remaining');
+        document.getElementById('t-tx').textContent = 'Aligning model behaviour…';
+        if (elapsed >= stepDur) { clearInterval(dpoTimer); runPhase(idx + 1); }
+      }, interval);
+    } else {
+      setTimeout(() => runPhase(idx + 1), ph.dur);
+    }
+  }
+
+  runPhase(0);
+}
+
+function addStep(label, emoji, state, info) {
+  const pw = document.getElementById('prog-wrap');
+  const ICON = {spinning:emoji||'⟳', done:'✓', error:'✕'};
+  const el = document.createElement('div');
+  el.className = 'prog-step';
+  const tc = state==='done'?'done-text':state==='error'?'error-text':'';
+  el.innerHTML = '<div class="ps-icon '+state+'">'+ICON[state]+'</div><div class="ps-body"><div class="ps-title '+tc+'">'+esc(label)+(state==='spinning'?'<span class="ps-spinner"></span>':'')+'</div>'+(info?'<div class="ps-sub">'+esc(info)+'</div>':'')+'</div>';
+  pw.appendChild(el);
+  pw.scrollTop = pw.scrollHeight;
+  return el;
+}
+
+function markDone(el) {
+  if (!el) return;
+  const icon = el.querySelector('.ps-icon'), title = el.querySelector('.ps-title');
+  const sp = title && title.querySelector('.ps-spinner');
+  if (icon) { icon.className = 'ps-icon done'; icon.textContent = '✓'; }
+  if (title) title.className = 'ps-title done-text';
+  if (sp) sp.remove();
+}
+
+function updateSubMsg(el, text) {
+  if (!el) return;
+  let sub = el.querySelector('.ps-sub.highlight');
+  if (!sub) { sub = document.createElement('div'); sub.className = 'ps-sub highlight'; el.querySelector('.ps-body').appendChild(sub); }
+  sub.textContent = text;
+}
+
+function setDot(state) {
+  const d = document.getElementById('t-dot');
+  if (d) d.className = 'dot ' + state;
+}
+
+// ════════════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════════════
+function toggleChunk(hdr) {
+  const txt = hdr.nextElementSibling;
+  const btn = hdr.querySelector('.c-toggle');
+  if (!txt || !btn) return;
+  const open = txt.classList.toggle('open');
+  btn.textContent = open ? '▴ Collapse' : '▾ Read';
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toast(msg, type, dur) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type||'info');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = '', dur||3000);
+}
+
+// Init
+updateNav();
+// Pre-select none as data source
+pickSrc('none');
+document.getElementById('src-none').classList.add('sel');
+</script>
+</body>
+</html>
